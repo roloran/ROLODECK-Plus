@@ -1,3 +1,9 @@
+#ifdef ROLODECK_LVGL_V9
+
+#include "lv_conf_v9.h"
+
+#else
+
 /**
  * @file lv_conf.h
  * Configuration file for v8.3.0-dev
@@ -710,3 +716,5 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #endif /*LV_CONF_H*/
 
 #endif /*End of "Content enable"*/
+
+#endif /* ROLODECK_LVGL_V9 */

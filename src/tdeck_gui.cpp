@@ -10,6 +10,22 @@
 #include "settings-scenario.h"
 #include "gps.h"
 
+static lv_obj_t *gui_event_target(lv_event_t *event)
+{
+#if LVGL_VERSION_MAJOR >= 9
+  return lv_event_get_target_obj(event);
+#else
+  return lv_event_get_target(event);
+#endif
+}
+
+// LVGL style selectors combine part and state bit fields. Cast each operand
+// before ORing so GCC 14 does not diagnose the two enum types as incompatible.
+static const lv_style_selector_t GUI_MAIN_DEFAULT =
+    (lv_style_selector_t)LV_PART_MAIN | (lv_style_selector_t)LV_STATE_DEFAULT;
+static const lv_style_selector_t GUI_CURSOR_USER_1 =
+    (lv_style_selector_t)LV_PART_CURSOR | (lv_style_selector_t)LV_STATE_USER_1;
+
 uint8_t my_previous_screen = SCREEN_SPLASH;
 uint8_t my_current_screen = SCREEN_SPLASH;
 uint8_t my_previous_nonsplash_screen = SCREEN_EULA;
@@ -93,33 +109,33 @@ bool gui_cire_buttons_currently_disabled = false;
 void gui_callback_emer(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
   if ( event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT ); 
-    lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT ); 
-    lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+    lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
+    lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
+    lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
 
     String s_who = lv_textarea_get_text(ui_TextAreaEMERWho);
     if (s_who.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     String s_where = lv_textarea_get_text(ui_TextAreaEMERWhere);
     if (s_where.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     String s_what = lv_textarea_get_text(ui_TextAreaEMERWhat);
     if (s_what.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     if (enoughData) gui_transition_to_screen(SCREEN_EMERSTEPTWO);
@@ -136,7 +152,7 @@ int64_t last_button_press = 0;
 void gui_callback_cire(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 5000) return;
@@ -145,21 +161,21 @@ void gui_callback_cire(lv_event_t *e)
   if (event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT ); 
-    lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+    lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
+    lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
 
     String s_who = lv_textarea_get_text(ui_TextAreaCIREWho);
     if (s_who.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     String s_what = lv_textarea_get_text(ui_TextAreaCIREFreetext);
     if (s_what.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     if (s_what.length() < 3) return;
@@ -212,7 +228,7 @@ void gui_callback_cire(lv_event_t *e)
 void gui_callback_resp_submit(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 5000) return;
@@ -221,13 +237,13 @@ void gui_callback_resp_submit(lv_event_t *e)
   if (event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xff8800), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+    lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xff8800), GUI_MAIN_DEFAULT);
 
     String s_freetext = lv_textarea_get_text(ui_TextAreaRESPFreetext);
     if (s_freetext.length() < 1)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT ); 
+      lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
     }
 
     if (enoughData)
@@ -269,7 +285,7 @@ void gui_callback_resp_submit(lv_event_t *e)
 void gui_callback_resp_abort(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 2000) return;
@@ -302,8 +318,8 @@ void gui_switch_red_button_mode(uint8_t new_mode)
     lv_label_set_text(ui_LabelButtonEMER, "Nachfrage\nbeantworten");
     lv_label_set_text(ui_LabelButtonCIRE, " \n ");
     lv_obj_add_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
-    lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xff8800), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xff8800), GUI_MAIN_DEFAULT);
+    lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
     set_gui_needs_screen_refresh(true);
     tdeck_loop();
   }
@@ -319,7 +335,7 @@ void gui_callback_red_button_pressed(lv_event_t *e)
   if (gui_cire_buttons_currently_disabled) return;
 
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -340,7 +356,7 @@ void gui_callback_blue_button_pressed(lv_event_t *e)
   if (gui_cire_buttons_currently_disabled) return;
 
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -352,7 +368,7 @@ void gui_callback_blue_button_pressed(lv_event_t *e)
 void gui_callback_eula_ok(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -372,7 +388,7 @@ void gui_callback_eula_ok(lv_event_t *e)
 void gui_callback_emer_abort(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -384,7 +400,7 @@ void gui_callback_emer_abort(lv_event_t *e)
 void gui_callback_emer2_abort(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -396,7 +412,7 @@ void gui_callback_emer2_abort(lv_event_t *e)
 void gui_callback_cire_abort(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   if (event_code == LV_EVENT_CLICKED)
   {
@@ -412,8 +428,8 @@ void gui_disable_cire_buttons(void)
   lv_obj_add_state(ui_LabelButtonEMER, LV_STATE_DISABLED);
   lv_obj_add_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
   gui_cire_buttons_currently_disabled = true;
-  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
 
   return;
 }
@@ -425,8 +441,8 @@ void gui_enable_cire_buttons(void)
   lv_obj_clear_state(ui_LabelButtonEMER, LV_STATE_DISABLED);
   lv_obj_clear_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
   gui_cire_buttons_currently_disabled = false;
-  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xE04646), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xE04646), GUI_MAIN_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), GUI_MAIN_DEFAULT);
 
   return;
 }
@@ -489,7 +505,7 @@ void gui_resp_add_text(char *s)
 void gui_callback_emer_send(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 5000) return;
@@ -562,7 +578,7 @@ void gui_callback_emer_send(lv_event_t *e)
 void gui_callback_oac_nav1(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -579,7 +595,7 @@ void gui_callback_oac_nav1(lv_event_t *e)
 void gui_callback_oac_nav2(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -596,7 +612,7 @@ void gui_callback_oac_nav2(lv_event_t *e)
 void gui_callback_oac_nav3(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -613,7 +629,7 @@ void gui_callback_oac_nav3(lv_event_t *e)
 void gui_callback_oac_nav4(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -630,7 +646,7 @@ void gui_callback_oac_nav4(lv_event_t *e)
 void gui_callback_oanc_nav1(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -647,7 +663,7 @@ void gui_callback_oanc_nav1(lv_event_t *e)
 void gui_callback_oanc_nav2(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -664,7 +680,7 @@ void gui_callback_oanc_nav2(lv_event_t *e)
 void gui_callback_oanc_nav3(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -681,7 +697,7 @@ void gui_callback_oanc_nav3(lv_event_t *e)
 void gui_callback_oanc_nav4(lv_event_t *e)
 {
   lv_event_code_t event_code = lv_event_get_code(e);
-  lv_obj_t *target = lv_event_get_target(e);
+  lv_obj_t *target = gui_event_target(e);
 
   int64_t now = my_millis();
   if (now - last_button_press < 500) return;
@@ -713,7 +729,7 @@ void gui_callback_setup(void)
   lv_obj_add_event_cb(ui_ButtonEMERAbort1, gui_callback_emer2_abort, LV_EVENT_CLICKED, NULL);
   lv_label_set_text(ui_LabelEMERButtonAbort1, "Vorheriger\nSchritt");
   lv_obj_set_align(ui_LabelEMERButtonAbort1, LV_ALIGN_CENTER);
-  lv_obj_set_style_text_align(ui_LabelEMERButtonAbort1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_align(ui_LabelEMERButtonAbort1, LV_TEXT_ALIGN_CENTER, GUI_MAIN_DEFAULT);
 
   // CIRE Screen Buttons
   lv_obj_add_event_cb(ui_ButtonCIREsubmit, gui_callback_cire, LV_EVENT_CLICKED, NULL);
@@ -736,7 +752,7 @@ void gui_callback_setup(void)
     lv_textarea_set_text(ui_TextAreaCIREWho, owner_c);
   }
 
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), GUI_MAIN_DEFAULT);
 
   // Navigation buttons for browsing through messages on Crisis and NonCrisis UI screens
   lv_obj_add_event_cb(ui_ButtonOACNav1, gui_callback_oac_nav1, LV_EVENT_CLICKED, NULL);
@@ -749,15 +765,15 @@ void gui_callback_setup(void)
   lv_obj_add_event_cb(ui_ButtonOANCNav4, gui_callback_oanc_nav4, LV_EVENT_CLICKED, NULL);
 
   /* Disable cursor blinking in read-only text areas */
-  lv_obj_set_style_anim_time(ui_TextAreaOACrisis, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_set_style_border_width(ui_TextAreaOACrisis, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_add_state(ui_TextAreaOACrisis, LV_STATE_FOCUSED | LV_STATE_USER_1);
-  lv_obj_set_style_anim_time(ui_TextAreaOANonCrisis, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_set_style_border_width(ui_TextAreaOANonCrisis, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_add_state(ui_TextAreaOANonCrisis, LV_STATE_FOCUSED | LV_STATE_USER_1);
-  lv_obj_set_style_anim_time(ui_TextAreaRESPoa, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_set_style_border_width(ui_TextAreaRESPoa, 0, LV_STATE_USER_1 | LV_PART_CURSOR);
-  lv_obj_add_state(ui_TextAreaRESPoa, LV_STATE_FOCUSED | LV_STATE_USER_1);
+  lv_obj_set_style_anim_time(ui_TextAreaOACrisis, 0, GUI_CURSOR_USER_1);
+  lv_obj_set_style_border_width(ui_TextAreaOACrisis, 0, GUI_CURSOR_USER_1);
+  lv_obj_add_state(ui_TextAreaOACrisis, (lv_state_t)(LV_STATE_FOCUSED | LV_STATE_USER_1));
+  lv_obj_set_style_anim_time(ui_TextAreaOANonCrisis, 0, GUI_CURSOR_USER_1);
+  lv_obj_set_style_border_width(ui_TextAreaOANonCrisis, 0, GUI_CURSOR_USER_1);
+  lv_obj_add_state(ui_TextAreaOANonCrisis, (lv_state_t)(LV_STATE_FOCUSED | LV_STATE_USER_1));
+  lv_obj_set_style_anim_time(ui_TextAreaRESPoa, 0, GUI_CURSOR_USER_1);
+  lv_obj_set_style_border_width(ui_TextAreaRESPoa, 0, GUI_CURSOR_USER_1);
+  lv_obj_add_state(ui_TextAreaRESPoa, (lv_state_t)(LV_STATE_FOCUSED | LV_STATE_USER_1));
 
   return;
 }

@@ -68,12 +68,20 @@ void tdeck_loop(void);
 /**
  * Prototype of our own keyboard_read function. Used internally.
  */
+#if LVGL_VERSION_MAJOR >= 9
+void my_keyboard_read(lv_indev_t *indev, lv_indev_data_t *data);
+#else
 void my_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data);
+#endif
 
 /**
  * Prototype of our own touchpad_read function. Used internally.
  */
+#if LVGL_VERSION_MAJOR >= 9
+void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data);
+#else
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data);
+#endif
 
 /**
  * ESP32-based version of millis(). Note that int64_t is used for timestamps across this project. 

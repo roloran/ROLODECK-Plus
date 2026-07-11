@@ -19,13 +19,11 @@ if framework_dir is None:
     framework_dir = join(packages_dir, "framework-arduinoespressif32")
 env.Append(CPPPATH=[join(framework_dir, "libraries", "FS", "src")])
 
-# GCC 14 warns when LVGL 8 combines its part and state enum values as style
-# selectors, although this is the documented LVGL API. ESP8266Audio also
-# builds an unused PDM backend with one benign IDF 5 narrowing conversion.
-# Keep these C++-specific options away from the C compiler.
-env.Append(
-    CXXFLAGS=[
-        "-Wno-deprecated-enum-enum-conversion",
-        "-Wno-narrowing",
-    ]
-)
+# ESP8266Audio builds an unused PDM backend with one benign IDF 5 narrowing
+# conversion. GCC 14 additionally warns when LVGL 8 combines its part and
+# state enum values as documented style selectors; LVGL 9 no longer needs
+# that suppression. Keep these C++-specific options away from the C compiler.
+cxxflags = ["-Wno-narrowing"]
+if env.subst("$PIOENV") == "tdeck-plus-core3":
+    cxxflags.append("-Wno-deprecated-enum-enum-conversion")
+env.Append(CXXFLAGS=cxxflags)

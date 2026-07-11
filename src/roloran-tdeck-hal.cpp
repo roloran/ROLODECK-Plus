@@ -376,19 +376,33 @@ bool touch_touched()
   return false;
 }
 
+#if LVGL_VERSION_MAJOR >= 9
+void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
+#else
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
+#endif
 {
   if (touch_touched())
   {
     if (tdeck_display_is_on && tdeck_screensaver_off_since() > 2000)
     {
-      data->state = LV_INDEV_STATE_PR;
+      data->state =
+#if LVGL_VERSION_MAJOR >= 9
+        LV_INDEV_STATE_PRESSED;
+#else
+        LV_INDEV_STATE_PR;
+#endif
       data->point.x = touch_last_x;
       data->point.y = touch_last_y;
     }
     else /* if back from screensaver, don't accidentally press a button */
     {
-      data->state = LV_INDEV_STATE_PR;
+      data->state =
+#if LVGL_VERSION_MAJOR >= 9
+        LV_INDEV_STATE_PRESSED;
+#else
+        LV_INDEV_STATE_PR;
+#endif
       data->point.x = 0;
       data->point.y = 0;
     }
@@ -396,26 +410,41 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
   }
   else
   {
-    data->state = LV_INDEV_STATE_REL;
+    data->state =
+#if LVGL_VERSION_MAJOR >= 9
+      LV_INDEV_STATE_RELEASED;
+#else
+      LV_INDEV_STATE_REL;
+#endif
   }
 }
 
 /* -------------------------------------------------------------------------- */
 
+#if LVGL_VERSION_MAJOR >= 9
+void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+#else
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+#endif
 {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
 
   tdeck_spi_lock();
   digitalWrite(TDECK_TFT_CS, LOW);
-#if (LV_COLOR_16_SWAP != 0)
+#if LVGL_VERSION_MAJOR >= 9
+  gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+#elif (LV_COLOR_16_SWAP != 0)
   gfx->draw16bitBeRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
 #else
   gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
 #endif
   digitalWrite(TDECK_TFT_CS, HIGH);
+#if LVGL_VERSION_MAJOR >= 9
+  lv_display_flush_ready(disp);
+#else
   lv_disp_flush_ready(disp);
+#endif
   tdeck_spi_unlock();
   return;
 }
@@ -424,9 +453,14 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 static uint32_t screenWidth;
 static uint32_t screenHeight;
+#if LVGL_VERSION_MAJOR >= 9
+static uint16_t *disp_draw_buf;
+static lv_display_t *display;
+#else
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf, *disp_draw_buf2;
 static lv_disp_drv_t disp_drv;
+#endif
 
 volatile bool keyboard_interrupted = false;
 
@@ -538,7 +572,11 @@ static bool tdeck_keyboard_init(void)
 
 /* -------------------------------------------------------------------------- */
 
+#if LVGL_VERSION_MAJOR >= 9
+void my_keyboard_read(lv_indev_t *indev, lv_indev_data_t *data)
+#else
 void my_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+#endif
 {
   static uint32_t last_key = 0;
   if (last_key)
@@ -546,7 +584,12 @@ void my_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
     if (tdeck_display_is_on && tdeck_screensaver_off_since() > 2000)
     {
       data->key = last_key;
-      data->state = LV_INDEV_STATE_REL;
+      data->state =
+#if LVGL_VERSION_MAJOR >= 9
+        LV_INDEV_STATE_RELEASED;
+#else
+        LV_INDEV_STATE_REL;
+#endif
     }
     last_key = 0;
   }
@@ -622,7 +665,12 @@ void my_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
         }
 
         if (tdeck_display_is_on && tdeck_screensaver_off_since() > 2000) data->key = key;
-        data->state = LV_INDEV_STATE_PR;
+        data->state =
+#if LVGL_VERSION_MAJOR >= 9
+          LV_INDEV_STATE_PRESSED;
+#else
+          LV_INDEV_STATE_PR;
+#endif
 
         timestamp_last_activity = my_millis();
 
@@ -686,11 +734,17 @@ void tdeck_setup(void)
 
   /* ------------------------------------------------------------ */
   lv_init();
+#if LVGL_VERSION_MAJOR >= 9
+  lv_tick_set_cb([]() -> uint32_t { return (uint32_t)millis(); });
+#endif
 
   screenWidth = gfx->width();
   screenHeight = gfx->height();
 
-#ifdef ESP32
+#if LVGL_VERSION_MAJOR >= 9
+  disp_draw_buf = (uint16_t *)heap_caps_malloc(sizeof(uint16_t) * screenWidth * 40,
+                                               MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+#elif defined(ESP32)
   disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 40, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 #else
   disp_draw_buf = (lv_color_t *)malloc(sizeof(lv_color_t) * screenWidth * 20);
@@ -702,6 +756,36 @@ void tdeck_setup(void)
   }
   else
   {
+#if LVGL_VERSION_MAJOR >= 9
+    display = lv_display_create(screenWidth, screenHeight);
+    if (!display)
+    {
+      Serial.println(SERIAL_PREFIX "ERROR: LVGL display create failed!");
+      initialization_failed = true;
+    }
+    else
+    {
+      lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB565);
+      lv_display_set_buffers(display, disp_draw_buf, NULL,
+                             sizeof(uint16_t) * screenWidth * 40,
+                             LV_DISPLAY_RENDER_MODE_PARTIAL);
+      lv_display_set_flush_cb(display, my_disp_flush);
+
+      lv_indev_t *pointer_indev = lv_indev_create();
+      lv_indev_set_type(pointer_indev, LV_INDEV_TYPE_POINTER);
+      lv_indev_set_read_cb(pointer_indev, my_touchpad_read);
+      lv_timer_set_period(lv_indev_get_read_timer(pointer_indev), 30);
+
+      lv_indev_t *kb_indev = lv_indev_create();
+      lv_indev_set_type(kb_indev, LV_INDEV_TYPE_KEYPAD);
+      lv_indev_set_read_cb(kb_indev, my_keyboard_read);
+      lv_timer_set_period(lv_indev_get_read_timer(kb_indev), 30);
+
+      lv_group_t *g = lv_group_create();
+      lv_group_set_default(g);
+      lv_indev_set_group(kb_indev, g);
+    }
+#else
     lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, screenWidth * 20); // 10 sufficient
     lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = screenWidth;
@@ -727,6 +811,7 @@ void tdeck_setup(void)
     static lv_group_t *g = lv_group_create();
     lv_group_set_default(g);
     lv_indev_set_group(kb_indev, g);
+#endif
 
     ui_init();
     lv_timer_handler();

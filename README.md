@@ -14,7 +14,7 @@ The firmware in this repository is the prototype RDCP MG implementation for the 
 
 The supported build environment is [PlatformIO](https://platformio.org/). Install PlatformIO Core or use the PlatformIO extension for your IDE; no Arduino IDE setup and no machine-global Arduino libraries are required.
 
-The default `tdeck-plus-core3` environment uses Pioarduino's pinned `platform-espressif32` 55.03.39 release, which supplies Arduino-ESP32 3.3.9 and ESP-IDF 5.5.4. The migration has been qualified on a LilyGo T-Deck Plus. The retained `tdeck-plus-core2` fallback uses the official `platformio/espressif32@6.12.0` platform with Arduino-ESP32 2.0.17, allowing regressions to be compared against the former production toolchain.
+The default `tdeck-plus-core3-lvgl9` environment uses Pioarduino's pinned `platform-espressif32` 55.03.39 release, which supplies Arduino-ESP32 3.3.9 and ESP-IDF 5.5.4, together with LVGL 9.5.0. The migrations have been qualified on a LilyGo T-Deck Plus. Two comparison environments remain available: `tdeck-plus-core3` uses the same Arduino/ESP-IDF platform with LVGL 8.4.0, and `tdeck-plus-core2` uses the official `platformio/espressif32@6.12.0` platform with Arduino-ESP32 2.0.17 and LVGL 8.4.0. PlatformIO may reinstall the selected Arduino framework when switching between Core 2 and Core 3 because both platforms use the same package name. The explicit package pins select the correct release, and `compile.sh` removes a mismatched cached framework before building so the switch completes in one invocation.
 
 The PlatformIO environment also fixes the hardware settings previously passed as Arduino board options:
 
@@ -25,9 +25,9 @@ The PlatformIO environment also fixes the hardware settings previously passed as
 - Two 3 MB OTA application slots and the remaining flash assigned to persistent storage
 - No PSRAM use, matching the proven firmware configuration
 
-Library dependencies are installed automatically and pinned to exact releases or Git commits in `platformio.ini`. Both environments use RadioLib 7.7.1 for the SX1262, LVGL 8.4.0, TinyGPSPlus 1.0.3, Operator Foundation Crypto 0.4.0, and pinned Unishox and ROLORAN SchnorrSig commits. Core 3 uses GFX Library for Arduino 1.6.6 and ESP8266Audio 2.4.1; the fallback retains GFX 1.6.0 and ESP8266Audio 2.0.0.
+Library dependencies are installed automatically and pinned to exact releases or Git commits in `platformio.ini`. All environments use RadioLib 7.7.1 for the SX1262, TinyGPSPlus 1.0.3, Operator Foundation Crypto 0.4.0, and pinned Unishox and ROLORAN SchnorrSig commits. Core 3 uses GFX Library for Arduino 1.6.6 and ESP8266Audio 2.4.1; the Core 2 fallback retains GFX 1.6.0 and ESP8266Audio 2.0.0. The production environment uses LVGL 9.5.0, while the two explicit regression environments retain LVGL 8.4.0.
 
-The project-local `lib/ESP32_BleSerial` is based on ESP32_BleSerial 3.0.1 and carries the small compatibility adjustments required by Arduino-ESP32 3.3.9's NimBLE implementation. The known-good T-Deck GT911 TouchLib snapshot is stored under `lib/TouchLib`, while the LVGL configuration and fixed flash partition table are stored under `include/` and `partitions/`. The adjusted Base64 implementation remains part of this project. Core-3-only build compatibility settings are kept in `scripts/pio_core3_compat.py`.
+The project-local `lib/ESP32_BleSerial` is based on ESP32_BleSerial 3.0.1 and carries the small compatibility adjustments required by Arduino-ESP32 3.3.9's NimBLE implementation. The known-good T-Deck GT911 TouchLib snapshot is stored under `lib/TouchLib`, while the LVGL configurations and fixed flash partition table are stored under `include/` and `partitions/`. `include/lv_conf.h` selects the legacy configuration or the LVGL 9 configuration in `include/lv_conf_v9.h` according to the build environment. The adjusted Base64 implementation remains part of this project. Core-3-only build compatibility settings are kept in `scripts/pio_core3_compat.py`.
 
 On the T-Deck's shared SPI pins, the display uses GFX's `Arduino_HWSPI` adapter with the global Arduino `SPI` instance. RadioLib uses that same instance for the SX1262, and firmware-level locking serializes access by the display and radio. This is required on ESP-IDF 5; GFX's ESP32-specific direct-register bus can hang when a second SPI peripheral is mapped onto those pins. Startup also runs an AES-256-GCM known-answer test so an incompatible cryptographic backend is reported immediately over serial.
 
@@ -37,23 +37,32 @@ Build the default production environment with:
 ./compile.sh
 ```
 
-The equivalent direct command is:
+When the matching Core 3 framework is already installed, the equivalent direct command is:
 
 ```bash
-pio run -e tdeck-plus-core3
+pio run -e tdeck-plus-core3-lvgl9
 ```
+
+Prefer `compile.sh` when switching between Core 2 and Core 3 so its framework-cache check runs first.
 
 Identify the connected device using `pio device list`, then upload by passing its current port explicitly:
 
 ```bash
 DEVICE="/dev/your-t-deck-device-here"
-pio run -e tdeck-plus-core3 -t upload --upload-port "$DEVICE"
+pio run -e tdeck-plus-core3-lvgl9 -t upload --upload-port "$DEVICE"
 ```
 
 The serial monitor is configured for 115200/8N1. DTR and RTS are disabled in `platformio.ini` because toggling them while opening the monitor can reset the ESP32-S3 or interfere with T-Deck peripheral initialization:
 
 ```bash
-pio device monitor -e tdeck-plus-core3 --port "$DEVICE"
+pio device monitor -e tdeck-plus-core3-lvgl9 --port "$DEVICE"
+```
+
+To compare against LVGL 8 on the otherwise identical Core 3 toolchain, select the legacy GUI environment explicitly:
+
+```bash
+PIO_ENV=tdeck-plus-core3 ./compile.sh
+# or: pio run -e tdeck-plus-core3
 ```
 
 To build the retained Arduino-ESP32 2.0.17 fallback, select it explicitly:
@@ -64,6 +73,19 @@ PIO_ENV=tdeck-plus-core2 ./compile.sh
 ```
 
 The device port is deliberately not committed because operating systems can assign a different name after reconnecting it. Initially flashing a T-Deck with its factory firmware may require holding the trackball button during power-on; consult LilyGo's T-Deck documentation when entering the bootloader manually.
+
+### LVGL 9 device acceptance
+
+After flashing a device, the following visual and interactive checks cover the parts that cannot be validated by compilation or the serial monitor alone:
+
+- Confirm that the splash logo is complete and that red and blue are not exchanged.
+- Visit all ten screens and check dimensions, clipping, text wrapping, and the Hack and Montserrat fonts.
+- Exercise touch, trackball navigation, the hardware keyboard, focus changes, and editable text areas.
+- Verify the EULA, crisis/non-crisis OA navigation, EMER, EMER2, CIRE, RESP, provisioning, and maintenance flows without sending unintended live reports.
+- Let the screensaver turn the panel off, then wake it using each input method and confirm a clean redraw.
+- While repeatedly changing screens, confirm that LoRa reception continues and that neither the display nor SX1262 becomes unresponsive.
+
+An unlocked maintenance device can use `UISCREEN 1` through `UISCREEN 10` to visit the screens directly. A provisioned locked device should not be wiped or unlocked merely to run this checklist.
 
 
 ## Initial Device Configuration
@@ -214,6 +236,8 @@ Important implementation units are:
 - `tdeck_gui.*` and the generated `ui*` files implement the LVGL user interface, fonts and images.
 - `roloran-audio.*` plays the notification melody through the T-Deck Plus speaker.
 - `Base64ren.*` is the locally adjusted Base64 implementation.
+
+The checked-in GUI was originally generated by SquareLine Studio 1.5.0 for LVGL 8.3.11. The SquareLine project and original image/font source files are not present in this repository. LVGL 9 therefore uses the generated layout through LVGL's supported API mappings, while the hardware adapter, event handling, display buffer, and image descriptor have native LVGL 9 implementations. The embedded logo had a completely opaque alpha channel and is now stored as RGB565 for both LVGL versions, reducing firmware size without changing its visible pixels. Future visual redesigns should recover or recreate the SquareLine project and original assets before regenerating these files.
 
 ## Limitations and the way ahead
 
