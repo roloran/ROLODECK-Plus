@@ -5,6 +5,7 @@
 #include "roloran-tdeck-persistence.h"
 #include "settings-scenario.h"
 
+#include <FS.h>
 #include <LittleFS.h>
 
 #define FILENAME_SERIAL_REPLAY "/sercmds.txt"

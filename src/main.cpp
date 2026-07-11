@@ -4,7 +4,8 @@
     Implementation for "scenario v2.0 (2025)" based on RDCP v0.4
 
     Developed using PlatformIO
-    Board type: ESP32S3 Dev Module (Boards manager: esp32 by Espressif Systems, v2.0.17 - do not use v3.x.x!)
+    Board type: ESP32S3 Dev Module
+    Supported environments: Arduino-ESP32 3.x (default) and 2.0.17 (fallback)
     Non-default settings: (cf. https://github.com/Xinyuan-LilyGO/T-Deck)
     - Enable USB CDC On Boot
     - Flash size 16 MB
@@ -65,6 +66,17 @@ int32_t min_free_heap = 0;
 void setup(void)
 {
   tdeck_setup();                // Initialize the LilyGo hardware; must be first
+  Serial.println(SERIAL_PREFIX "INFO: T-Deck hardware initialized");
+  Serial.flush();
+  if (crypto_self_test())
+  {
+    Serial.println(SERIAL_PREFIX "INFO: AES-256-GCM self-test passed");
+  }
+  else
+  {
+    Serial.println(SERIAL_PREFIX "ERROR: AES-256-GCM self-test failed");
+  }
+  Serial.flush();
   radio_setup();                // Initialize SX1262 through RadioLib on the shared SPI bus
   persistence_setup();          // Initialize persistence
   provisioned = persistence_configure_device_settings(); // Initialize device settings based on provisioning

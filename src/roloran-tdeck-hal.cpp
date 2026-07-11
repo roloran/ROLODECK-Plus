@@ -52,7 +52,12 @@ bool rolodeck_plus_oneburst_cire = false;
 #define ROLODECK_ST7789_NORON   0x13
 #define ROLODECK_ST7789_DISPOFF 0x28
 #define ROLODECK_ST7789_DISPON  0x29
-Arduino_DataBus *bus = new Arduino_ESP32SPI(TDECK_TFT_DC, TDECK_TFT_CS, TDECK_SPI_SCK, TDECK_SPI_MOSI, TDECK_SPI_MISO); // breaks sx , 1, false);
+// Keep the display and SX1262 on the same Arduino SPIClass instance. The
+// ESP32-specific GFX bus drives a second SPI peripheral directly and can hang
+// when both peripherals are mapped to the T-Deck's shared SPI pins on IDF 5.
+Arduino_DataBus *bus = new Arduino_HWSPI(
+  TDECK_TFT_DC, TDECK_TFT_CS, TDECK_SPI_SCK, TDECK_SPI_MOSI,
+  TDECK_SPI_MISO, &SPI, true);
 Arduino_GFX *gfx     = new Arduino_ST7789(bus, GFX_NOT_DEFINED /* RST */, 1 /* rotation */, false /* IPS */);
 
 /* -------------------------------------------------------------------------- */
@@ -442,35 +447,35 @@ void IRAM_ATTR ISR_key()
 void IRAM_ATTR ISR_up()
 {
   trackball_interrupted = true;
-  ++trackball_up_count;
+  trackball_up_count = trackball_up_count + 1;
   timestamp_last_activity = my_millis();
 }
 
 void IRAM_ATTR ISR_down()
 {
   trackball_interrupted = true;
-  ++trackball_down_count;
+  trackball_down_count = trackball_down_count + 1;
   timestamp_last_activity = my_millis();
 }
 
 void IRAM_ATTR ISR_left()
 {
   trackball_interrupted = true;
-  ++trackball_left_count;
+  trackball_left_count = trackball_left_count + 1;
   timestamp_last_activity = my_millis();
 }
 
 void IRAM_ATTR ISR_right()
 {
   trackball_interrupted = true;
-  ++trackball_right_count;
+  trackball_right_count = trackball_right_count + 1;
   timestamp_last_activity = my_millis();
 }
 
 void IRAM_ATTR ISR_click()
 {
   trackball_interrupted = true;
-  ++trackball_click_count;
+  trackball_click_count = trackball_click_count + 1;
   timestamp_last_activity = my_millis();
   gui_need_screen_refresh = true;
 #ifdef ROLODECK_GPS_QUICKCIRE
@@ -554,27 +559,27 @@ void my_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
       if (trackball_up_count)
       {
         key = LV_KEY_UP;
-        --trackball_up_count;
+        trackball_up_count = trackball_up_count - 1;
       }
       else if (trackball_down_count)
       {
         key = LV_KEY_DOWN;
-        --trackball_down_count;
+        trackball_down_count = trackball_down_count - 1;
       }
       else if (trackball_left_count)
       {
         key = LV_KEY_LEFT;
-        --trackball_left_count;
+        trackball_left_count = trackball_left_count - 1;
       }
       else if (trackball_right_count)
       {
         key = LV_KEY_RIGHT;
-        --trackball_right_count;
+        trackball_right_count = trackball_right_count - 1;
       }
       else if (trackball_click_count)
       {
         key = LV_KEY_ENTER;
-        --trackball_click_count;
+        trackball_click_count = trackball_click_count - 1;
       }
       else
       {
@@ -650,7 +655,7 @@ void tdeck_setup(void)
     Serial.println("ERROR: gfx->begin() failed!");
     initialization_failed = true;
   }
-  gfx->fillScreen(BLACK);
+  gfx->fillScreen(RGB565_BLACK);
   pinMode(GFX_BL, OUTPUT);
   digitalWrite(GFX_BL, HIGH);
 
@@ -755,7 +760,7 @@ void tdeck_re_init_spi(void)
   SPI.end();
   SPI.begin(TDECK_SPI_SCK, TDECK_SPI_MISO, TDECK_SPI_MOSI);
   gfx_begin_succeeded = gfx->begin();
-  gfx->fillScreen(BLACK);
+  gfx->fillScreen(RGB565_BLACK);
   gfx->invertDisplay(true);
   tdeck_spi_unlock();
   if (!gfx_begin_succeeded) serial_writeln("ERROR: gfx begin failed during re-init");

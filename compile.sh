@@ -2,4 +2,4 @@
 
 set -e
 
-exec pio run -e tdeck-plus-core2 "$@"
+exec pio run -e "${PIO_ENV:-tdeck-plus-core3}" "$@"

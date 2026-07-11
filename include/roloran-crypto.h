@@ -1,5 +1,5 @@
 #ifndef _ROLORAN_CRYPTO
-#define _ROLROAN_CRYPTO
+#define _ROLORAN_CRYPTO
 
 #include <GCM.h>
 #include <Crypto.h>
@@ -61,6 +61,14 @@ bool encrypt_aes256gcm_simplified(uint8_t *plaintext, size_t ptsize, uint8_t *ad
 * is authenticated, returns true, otherwise false. 
 */
 bool decrypt_aes256gcm_simplified(uint8_t *ciphertext, size_t csize, uint8_t *adata, size_t adatasize, uint8_t *key, uint8_t *iv, uint8_t *tag, uint8_t *out_plaintext);
+
+/**
+ * Runs an AES-256-GCM known-answer test, including authenticated decryption and
+ * rejection of a modified authentication tag. This is used during startup to
+ * catch runtime incompatibilities in the cryptographic backend.
+ * @return true if every test step succeeds, otherwise false
+ */
+bool crypto_self_test(void);
 
 
 /**

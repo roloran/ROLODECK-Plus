@@ -1,6 +1,13 @@
 #include <Arduino.h>
 #include <SPI.h>
+// RadioLib warns whenever USB CDC is enabled because it may block across
+// sleep. ROLODECK never enters that sleep mode and intentionally uses native
+// USB CDC, so mask the build setting only while parsing RadioLib's header.
+#undef ARDUINO_USB_CDC_ON_BOOT
+#define ARDUINO_USB_CDC_ON_BOOT 0
 #include <RadioLib.h>
+#undef ARDUINO_USB_CDC_ON_BOOT
+#define ARDUINO_USB_CDC_ON_BOOT 1
 #include <esp_timer.h>
 #include <math.h>
 

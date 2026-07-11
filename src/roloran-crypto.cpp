@@ -38,6 +38,41 @@ bool decrypt_aes256gcm_simplified(uint8_t *ciphertext, size_t csize, uint8_t *ad
   return decrypt_aes256gcm(ciphertext, csize, adata, adatasize, key, 32, iv, 12, tag, 16, out_plaintext);
 }
 
+bool crypto_self_test(void)
+{
+  // NIST AES-256-GCM vector: 256-bit zero key, 96-bit zero IV, and one
+  // 128-bit zero plaintext block without additional authenticated data.
+  uint8_t key[32] = {0};
+  uint8_t iv[12] = {0};
+  uint8_t plaintext[16] = {0};
+  uint8_t no_auth_data[1] = {0};
+  uint8_t ciphertext[16];
+  uint8_t tag[16];
+  uint8_t decrypted[16];
+  const uint8_t expected_ciphertext[16] = {
+    0xce, 0xa7, 0x40, 0x3d, 0x4d, 0x60, 0x6b, 0x6e,
+    0x07, 0x4e, 0xc5, 0xd3, 0xba, 0xf3, 0x9d, 0x18
+  };
+  const uint8_t expected_tag[16] = {
+    0xd0, 0xd1, 0xc8, 0xa7, 0x99, 0x99, 0x6b, 0xf0,
+    0x26, 0x5b, 0x98, 0xb5, 0xd4, 0x8a, 0xb9, 0x19
+  };
+
+  if (!encrypt_aes256gcm_simplified(plaintext, sizeof(plaintext), no_auth_data, 0,
+                                    key, iv, ciphertext, tag)) return false;
+  if (memcmp(ciphertext, expected_ciphertext, sizeof(ciphertext)) != 0) return false;
+  if (memcmp(tag, expected_tag, sizeof(tag)) != 0) return false;
+  if (!decrypt_aes256gcm_simplified(ciphertext, sizeof(ciphertext), no_auth_data, 0,
+                                    key, iv, tag, decrypted)) return false;
+  if (memcmp(decrypted, plaintext, sizeof(decrypted)) != 0) return false;
+
+  tag[0] ^= 0x01;
+  if (decrypt_aes256gcm_simplified(ciphertext, sizeof(ciphertext), no_auth_data, 0,
+                                   key, iv, tag, decrypted)) return false;
+
+  return true;
+}
+
 SchnorrSigCtx ssc;
 bool ssc_initialized = false;
 SchnorrSigVerify ssv;

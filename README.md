@@ -12,9 +12,9 @@ The firmware in this repository is the prototype RDCP MG implementation for the 
 
 ## Dependencies, Compilation, and Flashing
 
-The supported build environment is [PlatformIO](https://platformio.org/), using the `tdeck-plus-core2` environment defined in `platformio.ini`. Install PlatformIO Core or use the PlatformIO extension for your IDE; no Arduino IDE setup and no machine-global Arduino libraries are required.
+The supported build environment is [PlatformIO](https://platformio.org/). Install PlatformIO Core or use the PlatformIO extension for your IDE; no Arduino IDE setup and no machine-global Arduino libraries are required.
 
-The project pins `platformio/espressif32@6.12.0`, which supplies Arduino-ESP32 2.0.17. This version is intentional: the T-Deck Plus peripheral drivers and several dependencies have not yet been qualified with Arduino-ESP32 3.x. Any core 3 migration should use a separate experimental PlatformIO environment and retain the core 2 build as a fallback.
+The default `tdeck-plus-core3` environment uses Pioarduino's pinned `platform-espressif32` 55.03.39 release, which supplies Arduino-ESP32 3.3.9 and ESP-IDF 5.5.4. The migration has been qualified on a LilyGo T-Deck Plus. The retained `tdeck-plus-core2` fallback uses the official `platformio/espressif32@6.12.0` platform with Arduino-ESP32 2.0.17, allowing regressions to be compared against the former production toolchain.
 
 The PlatformIO environment also fixes the hardware settings previously passed as Arduino board options:
 
@@ -25,7 +25,11 @@ The PlatformIO environment also fixes the hardware settings previously passed as
 - Two 3 MB OTA application slots and the remaining flash assigned to persistent storage
 - No PSRAM use, matching the proven firmware configuration
 
-Library dependencies are installed automatically and pinned to exact releases or Git commits in `platformio.ini`. Notable dependencies include RadioLib 7.7.1 for the SX1262, LVGL 8.4.0, GFX Library for Arduino 1.6.0, ESP8266Audio 2.0.0, TinyGPSPlus 1.0.3, Operator Foundation Crypto 0.4.0, ESP32_BleSerial 2.0.1, Unishox, and the ROLORAN SchnorrSig library. The known-good T-Deck GT911 TouchLib snapshot is stored under `lib/TouchLib`, while the LVGL configuration and fixed flash partition table are stored under `include/` and `partitions/`. The adjusted Base64 implementation remains part of this project.
+Library dependencies are installed automatically and pinned to exact releases or Git commits in `platformio.ini`. Both environments use RadioLib 7.7.1 for the SX1262, LVGL 8.4.0, TinyGPSPlus 1.0.3, Operator Foundation Crypto 0.4.0, and pinned Unishox and ROLORAN SchnorrSig commits. Core 3 uses GFX Library for Arduino 1.6.6 and ESP8266Audio 2.4.1; the fallback retains GFX 1.6.0 and ESP8266Audio 2.0.0.
+
+The project-local `lib/ESP32_BleSerial` is based on ESP32_BleSerial 3.0.1 and carries the small compatibility adjustments required by Arduino-ESP32 3.3.9's NimBLE implementation. The known-good T-Deck GT911 TouchLib snapshot is stored under `lib/TouchLib`, while the LVGL configuration and fixed flash partition table are stored under `include/` and `partitions/`. The adjusted Base64 implementation remains part of this project. Core-3-only build compatibility settings are kept in `scripts/pio_core3_compat.py`.
+
+On the T-Deck's shared SPI pins, the display uses GFX's `Arduino_HWSPI` adapter with the global Arduino `SPI` instance. RadioLib uses that same instance for the SX1262, and firmware-level locking serializes access by the display and radio. This is required on ESP-IDF 5; GFX's ESP32-specific direct-register bus can hang when a second SPI peripheral is mapped onto those pins. Startup also runs an AES-256-GCM known-answer test so an incompatible cryptographic backend is reported immediately over serial.
 
 Build the default production environment with:
 
@@ -36,20 +40,27 @@ Build the default production environment with:
 The equivalent direct command is:
 
 ```bash
-pio run -e tdeck-plus-core2
+pio run -e tdeck-plus-core3
 ```
 
 Identify the connected device using `pio device list`, then upload by passing its current port explicitly:
 
 ```bash
 DEVICE="/dev/your-t-deck-device-here"
-pio run -e tdeck-plus-core2 -t upload --upload-port "$DEVICE"
+pio run -e tdeck-plus-core3 -t upload --upload-port "$DEVICE"
 ```
 
 The serial monitor is configured for 115200/8N1. DTR and RTS are disabled in `platformio.ini` because toggling them while opening the monitor can reset the ESP32-S3 or interfere with T-Deck peripheral initialization:
 
 ```bash
-pio device monitor -e tdeck-plus-core2 --port "$DEVICE"
+pio device monitor -e tdeck-plus-core3 --port "$DEVICE"
+```
+
+To build the retained Arduino-ESP32 2.0.17 fallback, select it explicitly:
+
+```bash
+PIO_ENV=tdeck-plus-core2 ./compile.sh
+# or: pio run -e tdeck-plus-core2
 ```
 
 The device port is deliberately not committed because operating systems can assign a different name after reconnecting it. Initially flashing a T-Deck with its factory firmware may require holding the trackball button during power-on; consult LilyGo's T-Deck documentation when entering the bootloader manually.

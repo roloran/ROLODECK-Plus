@@ -1,17 +1,14 @@
 #ifndef _ROLORAN_AUDIO
 #define _ROLORAN_AUDIO
 
-#include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
 #include "AudioGeneratorRTTTL.h"
 #include "AudioOutputI2S.h"
 
-#define HAS_I2S
 #define DAC_I2S_BCK 7
 #define DAC_I2S_WS 5
 #define DAC_I2S_DOUT 6
 #define DAC_I2S_MCLK 21
-#define SPK_I2S_PORT I2S_NUM_0
 
 /**
  * Toggles whether sound is played (or disabled). 
