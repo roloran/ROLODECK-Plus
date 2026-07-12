@@ -1278,18 +1278,10 @@ void mb_show_current(int as_number)
         lv_obj_clear_state(ui_ButtonOACNav2, LV_STATE_DISABLED);
         lv_obj_clear_state(ui_ButtonOACNav3, LV_STATE_DISABLED);
         lv_obj_clear_state(ui_ButtonOACNav4, LV_STATE_DISABLED);
-        lv_obj_set_style_bg_color(ui_ButtonOACNav1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOACNav2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOACNav3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOACNav4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
         if (msg_crisis_total <= 1)
         {
             snprintf(textfield, MINIBUFLEN, "0 von 0");
-            lv_obj_set_style_bg_color(ui_ButtonOACNav1, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav2, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav3, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav4, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOACNav1, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOACNav2, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOACNav3, LV_STATE_DISABLED);
@@ -1301,8 +1293,6 @@ void mb_show_current(int as_number)
 
         if (as_number == 1)
         { // Disable backward buttons
-            lv_obj_set_style_bg_color(ui_ButtonOACNav1, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav2, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOACNav1, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOACNav2, LV_STATE_DISABLED);
         }
@@ -1316,8 +1306,6 @@ void mb_show_current(int as_number)
         { // Disable forward buttons
             msg_crisis_current = msg_crisis_total;
             snprintf(textfield, MINIBUFLEN, "%d von %d", msg_crisis_total, msg_crisis_total);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav3, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOACNav4, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOACNav3, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOACNav4, LV_STATE_DISABLED);
         }
@@ -1397,18 +1385,10 @@ void mb_show_current(int as_number)
         lv_obj_clear_state(ui_ButtonOANCNav2, LV_STATE_DISABLED);
         lv_obj_clear_state(ui_ButtonOANCNav3, LV_STATE_DISABLED);
         lv_obj_clear_state(ui_ButtonOANCNav4, LV_STATE_DISABLED);
-        lv_obj_set_style_bg_color(ui_ButtonOANCNav1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOANCNav2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOANCNav3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_color(ui_ButtonOANCNav4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
         if (msg_noncrisis_total <= 1)
         {
             snprintf(textfield, MINIBUFLEN, "0 von 0");
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav1, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav2, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav3, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav4, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOANCNav1, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOANCNav2, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOANCNav3, LV_STATE_DISABLED);
@@ -1420,8 +1400,6 @@ void mb_show_current(int as_number)
 
         if (as_number == 1)
         { // Disable backward buttons
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav1, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav2, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOANCNav1, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOANCNav2, LV_STATE_DISABLED);
         }
@@ -1435,8 +1413,6 @@ void mb_show_current(int as_number)
         { // Disable forward buttons
             msg_noncrisis_current = msg_noncrisis_total;
             snprintf(textfield, MINIBUFLEN, "%d von %d", msg_noncrisis_total, msg_noncrisis_total);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav3, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(ui_ButtonOANCNav4, lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_add_state(ui_ButtonOANCNav3, LV_STATE_DISABLED);
             lv_obj_add_state(ui_ButtonOANCNav4, LV_STATE_DISABLED);
         }

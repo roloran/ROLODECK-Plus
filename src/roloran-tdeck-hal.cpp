@@ -18,6 +18,7 @@
 
 #include "ui.h"
 #include "tdeck_gui.h"
+#include "rolodeck-ui-theme.h"
 #include "roloran-lora.h"
 #include "gps.h"
 
@@ -814,6 +815,7 @@ void tdeck_setup(void)
 #endif
 
     ui_init();
+    rolodeck_ui_theme_apply();
     lv_timer_handler();
 
     if (initialization_failed)
@@ -876,7 +878,6 @@ void tdeck_loop()
   if (gui_need_screen_refresh && tdeck_display_is_on)
   {
     gui_need_screen_refresh = false;
-    gui_transition_to_screen(gui_get_current_screen());
     lv_timer_handler();
     lv_obj_invalidate(lv_scr_act()); // Forces the screen to be redrawn
     lv_refr_now(NULL); // Forces LVGL to refresh immediately

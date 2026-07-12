@@ -10,4 +10,5 @@ build/*
 .pio/
 .cache/
 compile_commands.json
+src/idf_component.yml
 .DS_Store

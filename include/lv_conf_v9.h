@@ -26,6 +26,10 @@
 /* LVGL is serviced from the Arduino loop; no LVGL OS integration is needed. */
 #define LV_USE_OS LV_OS_NONE
 #define LV_DRAW_SW_DRAW_UNIT_CNT 1
+#define LV_DRAW_SW_COMPLEX 1
+#define LV_DRAW_SW_SHADOW_CACHE_SIZE 16
+#define LV_GRADIENT_MAX_STOPS 2
+#define LV_USE_DRAW_SW_COMPLEX_GRADIENTS 0
 
 /* Use the C library allocator, strings, and formatting implementation. */
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB

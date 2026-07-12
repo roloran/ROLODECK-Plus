@@ -9,6 +9,7 @@
 #include "roloran-board.h"
 #include "settings-scenario.h"
 #include "gps.h"
+#include "rolodeck-ui-theme.h"
 
 static lv_obj_t *gui_event_target(lv_event_t *event)
 {
@@ -39,6 +40,7 @@ void set_infrastructure_in_crisis(bool value) { infrastructure_in_crisis = value
 
 void gui_transition_to_screen(uint8_t screenId)
 {
+  uint8_t from_screen = my_current_screen;
   uint8_t tmp = my_previous_screen;
   my_previous_screen = my_current_screen;
   my_current_screen = screenId;
@@ -62,37 +64,41 @@ void gui_transition_to_screen(uint8_t screenId)
   serial_writeln(uiinfo);
   last_screen_switch_timestamp = my_millis();
 
+  uint32_t transition_duration = 0;
+  lv_scr_load_anim_t transition = rolodeck_ui_transition_for(
+      from_screen, my_current_screen, &transition_duration);
+
   switch(my_current_screen)
   {
     case SCREEN_MAINTENANCE:
-      _ui_screen_change( &ui_ScreenMaintenance, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenMaintenance_screen_init);
+      _ui_screen_change( &ui_ScreenMaintenance, transition, transition_duration, 0, &ui_ScreenMaintenance_screen_init);
       break;
     case SCREEN_CIRE:
-      _ui_screen_change( &ui_ScreenCIRE, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenCIRE_screen_init);
+      _ui_screen_change( &ui_ScreenCIRE, transition, transition_duration, 0, &ui_ScreenCIRE_screen_init);
       break;
     case SCREEN_EMERGENCY:
-      _ui_screen_change( &ui_ScreenEMER, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenEMER_screen_init);
+      _ui_screen_change( &ui_ScreenEMER, transition, transition_duration, 0, &ui_ScreenEMER_screen_init);
       break;
     case SCREEN_OACRISIS:
-      _ui_screen_change( &ui_ScreenOACrisis, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenOACrisis_screen_init);
+      _ui_screen_change( &ui_ScreenOACrisis, transition, transition_duration, 0, &ui_ScreenOACrisis_screen_init);
       break;
     case SCREEN_OANONCRISIS:
-      _ui_screen_change( &ui_ScreenOANonCrisis, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenOANonCrisis_screen_init);
+      _ui_screen_change( &ui_ScreenOANonCrisis, transition, transition_duration, 0, &ui_ScreenOANonCrisis_screen_init);
       break;
     case SCREEN_SPLASH:
-      _ui_screen_change( &ui_ScreenSplash, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenSplash_screen_init);
+      _ui_screen_change( &ui_ScreenSplash, transition, transition_duration, 0, &ui_ScreenSplash_screen_init);
       break;
     case SCREEN_PROVISIONING:
-      _ui_screen_change( &ui_ScreenProvisioning, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenProvisioning_screen_init);
+      _ui_screen_change( &ui_ScreenProvisioning, transition, transition_duration, 0, &ui_ScreenProvisioning_screen_init);
       break;
     case SCREEN_RESP:
-      _ui_screen_change( &ui_ScreenRESP, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenRESP_screen_init);
+      _ui_screen_change( &ui_ScreenRESP, transition, transition_duration, 0, &ui_ScreenRESP_screen_init);
       break;
     case SCREEN_EMERSTEPTWO:
-      _ui_screen_change( &ui_ScreenEMER2, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenEMER2_screen_init);
+      _ui_screen_change( &ui_ScreenEMER2, transition, transition_duration, 0, &ui_ScreenEMER2_screen_init);
       break;
     case SCREEN_EULA:
-      _ui_screen_change( &ui_ScreenEULA, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_ScreenEULA_screen_init);
+      _ui_screen_change( &ui_ScreenEULA, transition, transition_duration, 0, &ui_ScreenEULA_screen_init);
       break;
     default:
       break;
@@ -113,29 +119,29 @@ void gui_callback_emer(lv_event_t *e)
   if ( event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
-    lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
-    lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
+    rolodeck_ui_set_validation(ui_LabelEMERWho, ui_TextAreaEMERWho, false);
+    rolodeck_ui_set_validation(ui_LabelEMERWhere, ui_TextAreaEMERWhere, false);
+    rolodeck_ui_set_validation(ui_LabelEMERWhat, ui_TextAreaEMERWhat, false);
 
     String s_who = lv_textarea_get_text(ui_TextAreaEMERWho);
     if (s_who.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWho, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelEMERWho, ui_TextAreaEMERWho, true);
     }
 
     String s_where = lv_textarea_get_text(ui_TextAreaEMERWhere);
     if (s_where.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWhere, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelEMERWhere, ui_TextAreaEMERWhere, true);
     }
 
     String s_what = lv_textarea_get_text(ui_TextAreaEMERWhat);
     if (s_what.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelEMERWhat, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelEMERWhat, ui_TextAreaEMERWhat, true);
     }
 
     if (enoughData) gui_transition_to_screen(SCREEN_EMERSTEPTWO);
@@ -161,21 +167,21 @@ void gui_callback_cire(lv_event_t *e)
   if (event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
-    lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFFFF), GUI_MAIN_DEFAULT);
+    rolodeck_ui_set_validation(ui_LabelCIREWho, ui_TextAreaCIREWho, false);
+    rolodeck_ui_set_validation(ui_LabelCIREFreetext, ui_TextAreaCIREFreetext, false);
 
     String s_who = lv_textarea_get_text(ui_TextAreaCIREWho);
     if (s_who.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelCIREWho, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelCIREWho, ui_TextAreaCIREWho, true);
     }
 
     String s_what = lv_textarea_get_text(ui_TextAreaCIREFreetext);
     if (s_what.length() < 3)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelCIREFreetext, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelCIREFreetext, ui_TextAreaCIREFreetext, true);
     }
 
     if (s_what.length() < 3) return;
@@ -237,13 +243,13 @@ void gui_callback_resp_submit(lv_event_t *e)
   if (event_code == LV_EVENT_CLICKED)
   {
     bool enoughData = true;
-    lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xff8800), GUI_MAIN_DEFAULT);
+    rolodeck_ui_set_validation(ui_LabelRESPFreetext, ui_TextAreaRESPFreetext, false);
 
     String s_freetext = lv_textarea_get_text(ui_TextAreaRESPFreetext);
     if (s_freetext.length() < 1)
     {
       enoughData = false;
-      lv_obj_set_style_text_color(ui_LabelRESPFreetext, lv_color_hex(0xFFFF00), GUI_MAIN_DEFAULT);
+      rolodeck_ui_set_validation(ui_LabelRESPFreetext, ui_TextAreaRESPFreetext, true);
     }
 
     if (enoughData)
@@ -318,8 +324,9 @@ void gui_switch_red_button_mode(uint8_t new_mode)
     lv_label_set_text(ui_LabelButtonEMER, "Nachfrage\nbeantworten");
     lv_label_set_text(ui_LabelButtonCIRE, " \n ");
     lv_obj_add_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
-    lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xff8800), GUI_MAIN_DEFAULT);
-    lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
+    lv_obj_add_state(ui_ButtonCIRE, LV_STATE_DISABLED);
+    rolodeck_ui_set_button_role(ui_ButtonEMER, ROLODECK_UI_ROLE_RESPONSE);
+    rolodeck_ui_set_button_role(ui_ButtonCIRE, ROLODECK_UI_ROLE_PRIMARY);
     set_gui_needs_screen_refresh(true);
     tdeck_loop();
   }
@@ -427,9 +434,9 @@ void gui_disable_cire_buttons(void)
   lv_label_set_text(ui_LabelButtonCIRE, "Bitte\nwarten");
   lv_obj_add_state(ui_LabelButtonEMER, LV_STATE_DISABLED);
   lv_obj_add_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
+  lv_obj_add_state(ui_ButtonEMER, LV_STATE_DISABLED);
+  lv_obj_add_state(ui_ButtonCIRE, LV_STATE_DISABLED);
   gui_cire_buttons_currently_disabled = true;
-  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x444444), GUI_MAIN_DEFAULT);
 
   return;
 }
@@ -440,9 +447,11 @@ void gui_enable_cire_buttons(void)
   lv_label_set_text(ui_LabelButtonCIRE, "Andere Nachricht an\nKrisenstab schicken");
   lv_obj_clear_state(ui_LabelButtonEMER, LV_STATE_DISABLED);
   lv_obj_clear_state(ui_LabelButtonCIRE, LV_STATE_DISABLED);
+  lv_obj_clear_state(ui_ButtonEMER, LV_STATE_DISABLED);
+  lv_obj_clear_state(ui_ButtonCIRE, LV_STATE_DISABLED);
   gui_cire_buttons_currently_disabled = false;
-  lv_obj_set_style_bg_color(ui_ButtonEMER, lv_color_hex(0xE04646), GUI_MAIN_DEFAULT);
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), GUI_MAIN_DEFAULT);
+  rolodeck_ui_set_button_role(ui_ButtonEMER, ROLODECK_UI_ROLE_EMERGENCY);
+  rolodeck_ui_set_button_role(ui_ButtonCIRE, ROLODECK_UI_ROLE_PRIMARY);
 
   return;
 }
@@ -752,7 +761,7 @@ void gui_callback_setup(void)
     lv_textarea_set_text(ui_TextAreaCIREWho, owner_c);
   }
 
-  lv_obj_set_style_bg_color(ui_ButtonCIRE, lv_color_hex(0x036FFC), GUI_MAIN_DEFAULT);
+  rolodeck_ui_set_button_role(ui_ButtonCIRE, ROLODECK_UI_ROLE_PRIMARY);
 
   // Navigation buttons for browsing through messages on Crisis and NonCrisis UI screens
   lv_obj_add_event_cb(ui_ButtonOACNav1, gui_callback_oac_nav1, LV_EVENT_CLICKED, NULL);
