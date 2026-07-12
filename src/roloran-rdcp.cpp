@@ -1863,8 +1863,9 @@ void rdcp_cire_resend(void)
   return;
 }
 
-uint16_t cire_timeout_ack_da = 20;  // default: 20 seconds
-uint16_t cire_timeout_ack_hq = 180; // default:  3 minutes
+/* Relax timeout settings for CIRE ACKs */
+uint16_t cire_timeout_ack_da = 70;   // specs: 60 seconds
+uint16_t cire_timeout_ack_hq = 1000; // specs: 900 seconds
 
 void set_ciretime_da(uint16_t timeout)
 {
