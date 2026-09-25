@@ -28,7 +28,8 @@
 #define TX_WHEN_CF 0
 
 /// RDCP v0.4 uses a 1.000 ms pause between retransmission of the same message. Depending on average hardware performance, we have to sleep much shorter.
-#define PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE 750
+/// #define PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE 750
+#define PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE 250
 
 /**
   * Data structure for an RDCP v0.4 Header

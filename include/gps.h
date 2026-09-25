@@ -5,7 +5,7 @@
 #define ROLODECK_USE_GPS
 
 // Use joystick button press for quick GPS CIRE sending?
-#define ROLODECK_GPS_QUICKCIRE
+// #define ROLODECK_GPS_QUICKCIRE
 
 #include <Arduino.h>
 

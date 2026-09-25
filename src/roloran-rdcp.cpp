@@ -2186,7 +2186,7 @@ void rdcp_send_cire(uint8_t subtype, uint16_t refnr, char *text)
   rm.header.sender = me;
   rm.header.destination  = RDCP_HQ_MULTICAST_ADDRESS;
   rm.header.message_type = RDCP_MSGTYPE_CITIZEN_REPORT;
-  rm.header.counter = 4;
+  rm.header.counter = NRT_HIGH;
   rm.header.sequence_number = get_next_rdcp_sequence_number(me);
   cire_current_seqnr = rm.header.sequence_number;
 
