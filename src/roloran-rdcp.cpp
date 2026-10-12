@@ -464,11 +464,13 @@ bool rdcp_mg_process_rxed_lora_packet(uint8_t *lora_packet, uint16_t lora_packet
        */
       /*
         For now, we accept duplicated OAs and Signatures as the Message Board can handle them properly.
+        Also, accept Acknowledgments if they arrived out of order.
       */
       if (
           (
             (rdcp_msg_in.header.message_type != RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) &&
-            (rdcp_msg_in.header.message_type != RDCP_MSGTYPE_SIGNATURE)
+            (rdcp_msg_in.header.message_type != RDCP_MSGTYPE_SIGNATURE) &&
+            (rdcp_msg_in.header.message_type != RDCP_MSGTYPE_ACK)
           )
           ||
           (
@@ -479,7 +481,8 @@ bool rdcp_mg_process_rxed_lora_packet(uint8_t *lora_packet, uint16_t lora_packet
 
       /* Don't accept duplicate OAs/Signatures after longer uptime or in HQ mode to improve device responsiveness */
       if ((rdcp_msg_in.header.message_type == RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) ||
-          (rdcp_msg_in.header.message_type == RDCP_MSGTYPE_SIGNATURE))
+          (rdcp_msg_in.header.message_type == RDCP_MSGTYPE_SIGNATURE) ||
+          (rdcp_msg_in.header.message_type == RDCP_MSGTYPE_ACK))
       {
         if ((my_millis() > 120 * MINUTES_TO_MILLISECONDS) || hq_mode) return false;
       }
@@ -506,6 +509,112 @@ bool rdcp_mg_process_rxed_lora_packet(uint8_t *lora_packet, uint16_t lora_packet
   return true;
 }
 
+struct sliding_prune_window spw;
+
+/**
+ * Initialize the Sliding Prune Window by zeroing all entries
+ */
+void rdcp_spw_init(void)
+{
+  for (int i=0; i != SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES; i++)
+  {
+    spw.windowentries[i].origin = 0x0000;
+    spw.windowentries[i].sequence_number = 0x0000;
+  }
+  spw.front = 0;
+  spw.initialized = true;
+  serial_writeln("INFO: SPW initialized");
+  return;
+}
+
+void rdcp_spw_reset(void)
+{
+  rdcp_spw_init();
+  return;
+}
+
+void rdcp_spw_delete_entry(uint16_t origin)
+{
+  for (int i=0; i != SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES; i++)
+  {
+    if (spw.windowentries[i].origin == origin)
+    {
+      spw.windowentries[i].sequence_number = 0x0000;
+      spw.windowentries[i].origin = 0x0000;
+    }
+  }
+  return;
+}
+
+void rdcp_spw_set_entry(uint16_t origin, uint16_t seqnr)
+{
+  bool found = false;
+  for (int i=0; i != SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES; i++)
+  {
+    if ((spw.windowentries[i].origin == origin) && (spw.windowentries[i].sequence_number == seqnr))
+    {
+      found = true;
+    }
+  }
+  if (!found)
+  {
+    spw.windowentries[spw.front].origin = origin;
+    spw.windowentries[spw.front].sequence_number = seqnr;
+    spw.front = (spw.front + 1) % SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES;
+  }
+  return;
+}
+
+void rdcp_spw_dump(void)
+{
+  char info[INFOLEN];
+  for (int i=0; i != SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES; i++)
+  {
+    if (spw.windowentries[i].origin == 0x0000) continue;
+    snprintf(info, INFOLEN, "INFO: SPW entry %i: %04X with seqnr %04X",
+      i,
+      spw.windowentries[i].origin,
+      spw.windowentries[i].sequence_number);
+    serial_writeln(info);
+  }
+  return;
+}
+
+bool rdcp_spw_check_and_add(uint16_t origin, uint16_t seqnr)
+{
+  bool result = true; // By default, mark as duplicate, as this was the previous fixed return value of our single caller
+  bool found = false; // Matching tuple was not yet found in the SPW
+
+  for (int i=0; i != SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES; i++)
+  {
+    if (spw.windowentries[i].origin == 0x0000) continue; // Skip unused entries
+    if (spw.windowentries[i].origin == origin)
+    {
+      if (spw.windowentries[i].sequence_number == seqnr)
+      {
+        found = true;
+        break;
+      }
+    }
+  }
+
+  /* 
+    If the entry was found, a message with this origin/seqnr was already processed previously, 
+    so there is nothing else to do but to return the dupe status as "true". 
+    Otherwise, we add the tuple to the SPW and return "false".
+   */
+
+  if (!found)
+  {
+    result = false;
+    spw.windowentries[spw.front].origin = origin;
+    spw.windowentries[spw.front].sequence_number = seqnr;
+    spw.front = (spw.front + 1) % SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES;
+  }
+
+  return result;
+}
+
 void rdcp_reset_duplicate_message_table()
 {
   dupe_table.num_entries = 0;
@@ -515,11 +624,14 @@ void rdcp_reset_duplicate_message_table()
     dupe_table.tableentry[i].sequence_number = RDCP_NO_SEQUENCE_NUMBER;
     dupe_table.tableentry[i].last_seen = NO_TIMESTAMP;
   }
+  rdcp_spw_reset();
   return;
 }
 
 bool rdcp_check_duplicate_message(uint16_t origin, uint16_t sequence_number)
 {
+  if (!spw.initialized) rdcp_spw_init();
+
   int pos = -1;
   for (int i=0; i != dupe_table.num_entries; i++)
   {
@@ -537,6 +649,7 @@ bool rdcp_check_duplicate_message(uint16_t origin, uint16_t sequence_number)
     dupe_table.tableentry[dupe_table.num_entries].sequence_number = sequence_number;
     dupe_table.tableentry[dupe_table.num_entries].last_seen = my_millis();
     dupe_table.num_entries++;
+    rdcp_spw_set_entry(origin, sequence_number);
     return false;
   }
   else
@@ -545,11 +658,47 @@ bool rdcp_check_duplicate_message(uint16_t origin, uint16_t sequence_number)
     if (dupe_table.tableentry[pos].sequence_number < sequence_number)
     { // update highest sequence number
       dupe_table.tableentry[pos].sequence_number = sequence_number;
+      rdcp_spw_set_entry(origin, sequence_number);
       return false;
     }
     else
-    { // duplicate found
-      return true;
+    { /* 
+        Duplicate found according to dupe table.
+        Apply additional checks to avoid omissions due to RDCP Message reordering issues.
+      */
+
+      /*
+        1)
+        If sequence number is exactly the same as the one in the dupe table, 
+        this is a duplicate for sure, no need to check SPW.
+      */
+      if (dupe_table.tableentry[pos].sequence_number == sequence_number) 
+      {
+        rdcp_spw_set_entry(origin, sequence_number); // Add seen message to SPW
+        return true;
+      }
+
+      /* 
+        2)
+        MGs are exempted from SPW checking as CIRE reordering railguards are in place. 
+      */
+      if (RDCP_ADDRESS_MG_LOWERBOUND < origin) 
+      {
+        return true; // no need to add to SPW as SPW check will always be skipped for devices in higher RDCP address range
+      }
+
+      /*
+        3)
+        If the sequence number to check is way too old, the message is considered a sure duplicate.
+      */
+      if (sequence_number + SPW_MAXIMUM_DIFFERENCE < dupe_table.tableentry[pos].sequence_number) 
+      {
+        return true; // no need to pollute SPW with sequence numbers that are too old anyway
+      }
+
+      /*  Finally check SPW, implicitly store the new message metadata, and use the check's result. */
+      bool spw_state = rdcp_spw_check_and_add(origin, sequence_number);
+      return spw_state;
     }
   }
   return false;
@@ -1863,9 +2012,9 @@ void rdcp_cire_resend(void)
   return;
 }
 
-/* Relax timeout settings for CIRE ACKs */
-uint16_t cire_timeout_ack_da = 70;   // specs: 60 seconds
-uint16_t cire_timeout_ack_hq = 1000; // specs: 900 seconds
+/* Relax default timeout settings for CIRE ACKs to cover for stress-testing scenarios; usually overriden by provisioning templates through HQ */
+uint16_t cire_timeout_ack_da = 60;   // specs: 60 seconds
+uint16_t cire_timeout_ack_hq = 1800; // specs: 900 seconds
 
 void set_ciretime_da(uint16_t timeout)
 {
@@ -1940,6 +2089,11 @@ void rdcp_cire_ack(uint16_t origin, uint16_t confirmedseqnr, uint8_t acktype)
 
   if ((origin >= RDCP_ADDRESS_DA_LOWERBOUND) && (origin < RDCP_ADDRESS_MG_LOWERBOUND))
   {
+    if (cire_state != CIRE_STATE_WAIT_DA)
+    {
+      serial_writeln("INFO: Received ACK from DA, but we are not waiting for it - ignoring (probably accepted duplicate)");
+      return;
+    }
     LittleFS.remove(FILENAME_CIRE);
     // Received ACK was from a DA, not by HQ
     if (acktype == RDCP_ACKNOWLEDGMENT_POSITIVE)

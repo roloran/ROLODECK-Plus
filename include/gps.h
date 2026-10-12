@@ -1,10 +1,12 @@
 #ifndef _ROLODECK_GPS
 #define _ROLODECK_GPS
 
-// Use GPS at all on ROLODECK Plus?
+// Undefine this to disable the use of the built-in GPS in T-Deck Plus devices
+// Without GPS support, this firmware is backward compatible to plain T-Deck devices
 #define ROLODECK_USE_GPS
 
 // Use joystick button press for quick GPS CIRE sending?
+// Usually only enabled for selected special operator personnel as it may be very confusing for regular users
 // #define ROLODECK_GPS_QUICKCIRE
 
 #include <Arduino.h>

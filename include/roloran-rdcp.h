@@ -647,5 +647,21 @@ void rdcpcsv_logfile_dump(void);
 
 void rdcp_send_cire_gps_oneburst(void);
 
+/* SPW Settings */
+
+#define SPW_MAXIMUM_DIFFERENCE 16
+#define SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES 256
+
+struct sliding_prune_window_entry {
+  uint16_t origin = 0x0000;
+  uint16_t sequence_number = 0x0000;
+};
+
+struct sliding_prune_window {
+  bool initialized = false;
+  int front = 0;
+  struct sliding_prune_window_entry windowentries[SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES];
+};
+
 #endif
 /* EOF */
