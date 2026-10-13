@@ -58,6 +58,8 @@ int32_t old_min_free_heap = ESP.getMinFreeHeap();
 int32_t free_heap = 0;
 int32_t min_free_heap = 0;
 
+extern int64_t reboot_requested;
+
 /**
  * setup() function, called once after device power-on.
  * Initializes the T-Deck hardware components (order is relevant) and retrieves
@@ -192,6 +194,8 @@ void loop(void)
   tdeck_loop();           // Periodically let the GUI do its work (once more...)
   if (!hq_mode) rdcp_cire_check();      // Check for timeouts of sent CIRE messages, i.e., no ACKs received from DA or HQ
   if (!hq_mode) rdcp_heartbeat_check(); // Check whether we should send a HEARTBEAT message
+  rdcp_cmd_check_rtc();
+  if (reboot_requested && (my_millis() > reboot_requested)) ESP.restart();
 
   if ((minutetimer == -1) || (my_millis() > minutetimer + 5 * MINUTES_TO_MILLISECONDS)) // execute initially and roughly once every five minutes
   {

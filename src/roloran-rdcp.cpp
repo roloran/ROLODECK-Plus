@@ -1145,6 +1145,94 @@ void rdcp_mg_process_incoming_ack(void)
   return;
 }
 
+struct rtc_entry {
+    bool active     = false;
+    int64_t alarm   = 0;
+    uint8_t restart = 0;
+    uint8_t persist = 0;
+    char rtc[256] = {0};
+};
+
+#define MAX_RTC 16
+
+bool rtc_active = false;
+rtc_entry RTC[MAX_RTC];
+int64_t reboot_requested = 0;
+
+void rdcp_cmd_check_rtc(void)
+{
+    if (!rtc_active) return;
+    bool one_active = false;
+    for (int i=0; i<MAX_RTC; i++)
+        if (RTC[i].active) one_active = true;
+    if (!one_active) rtc_active = false;
+    else
+    {
+        for (int i=0; i<MAX_RTC; i++)
+        {
+            if ((RTC[i].active) && (my_millis() > RTC[i].alarm))
+            {
+                RTC[i].active = false;
+                String s = String(RTC[i].rtc);
+                if (RTC[i].restart) reboot_requested = my_millis() + 5 * RTC[i].restart * MINUTES_TO_MILLISECONDS;
+                serial_process_command(s, String("RTC: "), RTC[i].persist != 0 ? true:false);
+            }
+        }
+    }
+
+    return;
+}
+
+void rdcp_cmd_rtc(void)
+{
+    uint8_t sha[32];
+    if (rdcp_msg_in.header.rdcp_payload_length <= RDCP_SIGNATURE_LENGTH) 
+    {
+        serial_writeln("WARNING: Invalid RTC message");
+        return;
+    }
+    get_inline_hash(&rdcp_msg_in, rdcp_msg_in.header.rdcp_payload_length - RDCP_SIGNATURE_LENGTH, sha);
+    uint8_t sig[128];
+    for (int i=0; i<RDCP_SIGNATURE_LENGTH; i++) sig[i] = rdcp_msg_in.payload.data[rdcp_msg_in.header.rdcp_payload_length - RDCP_SIGNATURE_LENGTH + i];
+    bool valid_signature = schnorr_verify_signature(sha, 32, sig);
+    if (!valid_signature)
+    {
+      serial_writeln("WARNING: Invalid HQ Schnorr signature for RDCP RTC - ignoring");
+      return;
+    }
+
+    for (int i=0; i<MAX_RTC; i++)
+    {
+        if (RTC[i].active == false)
+        {
+            RTC[i].active  = true;
+            RTC[i].alarm   = my_millis() + rdcp_msg_in.payload.data[0] * MINUTES_TO_MILLISECONDS;
+            RTC[i].restart = rdcp_msg_in.payload.data[1];
+            RTC[i].persist = rdcp_msg_in.payload.data[2];
+            for (int j=0; j<rdcp_msg_in.header.rdcp_payload_length - RDCP_SIGNATURE_LENGTH - 3; j++)
+            {
+                RTC[i].rtc[j+0] = rdcp_msg_in.payload.data[j+3];
+                RTC[i].rtc[j+1] = 0;
+            }
+            break;
+        }
+    }
+    rtc_active = true;
+    return;
+}
+
+/**
+ * Handle RDCP RTCs
+ */
+void rdcp_mg_process_rtc(void)
+{
+#ifdef DISABLE_RTC_SUPPORT
+  return;
+#endif
+  rdcp_cmd_rtc();
+  return;
+}
+
 void rdcp_mg_process_incoming_message(bool is_duplicate)
 {
   /* Handle rdcp_msg_in depending on its RDCP Message Type and Destination. */
@@ -1187,6 +1275,7 @@ void rdcp_mg_process_incoming_message(bool is_duplicate)
   if (mt == RDCP_MSGTYPE_DEVICE_REBOOT) rdcp_mg_process_rebootdevice();
   if (mt == RDCP_MSGTYPE_MAINTENANCE) rdcp_mg_process_maintenance();
   if (mt == RDCP_MSGTYPE_DEVICE_BLOCK_ALERT) rdcp_mg_process_blockalert();
+  if (mt == RDCP_MSGTYPE_RTC) rdcp_mg_process_rtc();
 
   if ((mt == RDCP_MSGTYPE_CITIZEN_REPORT) &&
       (rdcp_msg_in.header.origin == getMyRDCPAddress()) &&

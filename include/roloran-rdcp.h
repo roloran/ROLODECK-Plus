@@ -646,6 +646,7 @@ void rdcpcsv_logfile_delete(void);
 void rdcpcsv_logfile_dump(void);
 
 void rdcp_send_cire_gps_oneburst(void);
+void rdcp_cmd_check_rtc(void);
 
 /* SPW Settings */
 
