@@ -264,6 +264,46 @@ bool shall_show_eula(void);
  */
 void set_show_eula(bool newvalue);
 
+/**
+ * Get number of retransmissions, level low.
+ */
+int getMyNRT_LOW(void);
+
+/**
+ * Get number of retransmissions, level middle.
+ */
+int getMyNRT_MIDDLE(void);
+
+/**
+ * Get number of retransmissions, level high.
+ */
+int getMyNRT_HIGH(void);
+
+/**
+ * Set number of retransmissions, level low.
+ */
+void setMyNRT_LOW(int n);
+
+/**
+ * Set number of retransmissions, level middle.
+ */
+void setMyNRT_MIDDLE(int n);
+
+/**
+ * Set number of retransmissions, level high.
+ */
+void setMyNRT_HIGH(int n);
+
+/**
+ * Get inter-packet gap in ms.
+ */
+int getMyIPG(void);
+
+/**
+ * Set inter-packet gap in ms.
+ */
+void setMyIPG(int n);
+
 #endif
 
 /* EOF */

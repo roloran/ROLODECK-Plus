@@ -188,6 +188,8 @@ Provisioned devices dump parts of their configuration (e.g., LoRa parameters, RD
   - `RDCPACKS` sends a signed Acknowledgment message; this only works if a private key is stored on the device. The command expects Origin, Destination, acknowledged SequenceNumber, and Acknowledgment type as parameters. Note that usually only the HQ sends such messages and the HQ's private key must not be stored on end-user devices.
   - `RDCPACK` sends an (unsigned) Acknowledgment message; same as `RDCPACKS` but without the Schnorr signature. Note that usually only DAs send such acknowledgments.
   - `RDCPTIME` sends a signed Timestamp message to the broadcast address, e.g., `RDCPTIME 00 12 31 23 59 02` (see RDCP specs). Note that usually only the HQ sends such messages and other devices only accept it if properly signed.
+  - `RDCPNRT 024` sets the number of retransmissions for levels low, medium, and high.
+  - `RDCPIPG 1000` sets the RDCP inter-packet gap on retransmissions in ms.
 
 - Other device settings:
   - `SCREENSAVER` sets the delay before the screen is turned off when the device is idle in milliseconds. Default is `SCREENSAVER 30000`.

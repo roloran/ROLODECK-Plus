@@ -47,7 +47,11 @@
 
 #define NRT_LOW    0
 #define NRT_MIDDLE 2 
+#ifndef OLD_SPEC_DEFAULTS
 #define NRT_HIGH   2
+#else
+#define NRT_HIGH   4
+#endif
 
 #define AESTAGSIZE 16
 #define ASCIIKEYLEN 32

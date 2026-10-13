@@ -716,6 +716,38 @@ void serial_process_command(String s, String processing_mode, bool persist_selec
       uint16_t target = strtol(buffer, NULL, 16);
       rdcp_mg_send_test_message(target, p2);
     }
+    else if (s_uppercase.startsWith("RDCPNRT "))
+    { // RDCPNRT 024
+      // 01234567890123
+      String p1 = s.substring(8);
+      char buffer[32];
+      p1.toCharArray(buffer, 32);
+      uint32_t new_nrt = strtol(buffer, NULL, 16);
+
+      setMyNRT_LOW((new_nrt & 0x00000F00) >> 8);
+      setMyNRT_MIDDLE((new_nrt & 0x000000F0) >> 4);
+      setMyNRT_HIGH(new_nrt & 0x0000000F);
+
+      char b[DATABUFLEN];
+      snprintf(b, DATABUFLEN, "INFO: Setting RDCP numbers of retransmission to low=%d, middle=%d, high=%d", getMyNRT_LOW(), getMyNRT_MIDDLE(), getMyNRT_HIGH());
+      serial_writeln(b);
+
+      if (persist_selected_commands) persist_serial_command_for_replay(s);
+    }
+    else if (s_uppercase.startsWith("RDCPIPG "))
+    { // RDCPIPG 1000
+      // Sets the buffer time / inter packet gap between retransmissions 
+      String p1 = s.substring(8);
+      char buffer[32];
+      p1.toCharArray(buffer, 32);
+      uint32_t new_ipg = strtol(buffer, NULL, 10);
+      setMyIPG(new_ipg);
+      char info[256];
+      snprintf(info, INFOLEN, "INFO: Changed this device's RDCP v0.4 retransmission inter-packet gap to %d ms", 
+        getMyIPG());
+      serial_writeln(info);
+      if (persist_selected_commands) persist_serial_command_for_replay(s);
+  }    
     else if (s_uppercase.startsWith("RDCPCIRE "))
     {
       String p1 = s.substring(9, 11);  // Subtype

@@ -28,8 +28,7 @@
 #define TX_WHEN_CF 0
 
 /// RDCP v0.4 uses a 1.000 ms pause between retransmission of the same message. Depending on average hardware performance, we have to sleep much shorter.
-/// #define PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE 750
-#define PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE 250
+#define PROCESSING_TIME_BETWEEN_RETRANSMISSIONS 250
 
 /**
   * Data structure for an RDCP v0.4 Header
@@ -96,6 +95,7 @@ struct rdcp_message {
 
 #define RDCP_MSGTYPE_SIGNATURE               0x30
 #define RDCP_MSGTYPE_HEARTBEAT               0x31
+#define RDCP_MSGTYPE_RTC                     0x32
 
 #define RDCP_MSGTYPE_TUNNEL                  0x40
 #define RDCP_MSGTYPE_ROAMING_BEACON          0x41
@@ -649,7 +649,7 @@ void rdcp_send_cire_gps_oneburst(void);
 
 /* SPW Settings */
 
-#define SPW_MAXIMUM_DIFFERENCE 16
+#define SPW_MAXIMUM_DIFFERENCE 64
 #define SLIDING_PRUNE_WINDOW_NUMBER_OF_ENTRIES 256
 
 struct sliding_prune_window_entry {

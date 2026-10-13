@@ -37,6 +37,21 @@ uint8_t  MY_LORA_SW_TX = 0x12;            //< LoRa Short Sync Word
 int      MY_LORA_POWER_TX = 14;           //< LoRa Output Power in dBm, -17 to 22
 uint16_t MY_LORA_PREAMBLE_LENGTH_TX = 15; //< LoRa number of Preamble Symbols
 
+int MY_NRT_LOW    = NRT_LOW;
+int MY_NRT_MIDDLE = NRT_MIDDLE;
+int MY_NRT_HIGH   = NRT_HIGH;
+
+int MY_IPG = OUR_RDCP_TIMESLOT_BUFFER;
+
+int getMyNRT_LOW(void)    { return MY_NRT_LOW; }
+int getMyNRT_MIDDLE(void) { return MY_NRT_MIDDLE; }
+int getMyNRT_HIGH(void)   { return MY_NRT_HIGH; }
+void setMyNRT_LOW(int n)    { MY_NRT_LOW = n; return; }
+void setMyNRT_MIDDLE(int n) { MY_NRT_MIDDLE = n; return; }
+void setMyNRT_HIGH(int n)   { MY_NRT_HIGH = n; return; }
+int getMyIPG(void) { return MY_IPG; }
+void setMyIPG(int n) { MY_IPG = n; return; }
+
 uint16_t getMyRDCPAddress(void)                  { return MY_RDCP_ADDRESS; }
 void     setMyRDCPAddress(uint16_t rdcp_address) { MY_RDCP_ADDRESS = rdcp_address; return; }
 

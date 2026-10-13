@@ -484,7 +484,7 @@ bool rdcp_mg_process_rxed_lora_packet(uint8_t *lora_packet, uint16_t lora_packet
           (rdcp_msg_in.header.message_type == RDCP_MSGTYPE_SIGNATURE) ||
           (rdcp_msg_in.header.message_type == RDCP_MSGTYPE_ACK))
       {
-        if ((my_millis() > 120 * MINUTES_TO_MILLISECONDS) || hq_mode) return false;
+        if ((my_millis() > 1440 * MINUTES_TO_MILLISECONDS) || hq_mode) return false;
       }
     }
   }
@@ -777,12 +777,12 @@ void rdcp_update_channel_free_estimator_rx(void)
 
   uint32_t remaining_current_sender_time = airtime_with_buffer * rdcp_msg_in.header.counter;
 
-  uint8_t nrt = NRT_LOW;
+  uint8_t nrt = getMyNRT_LOW();
   uint8_t mt = rdcp_msg_in.header.message_type;
   if ( (mt == RDCP_MSGTYPE_INFRASTRUCTURE_RESET) || (mt == RDCP_MSGTYPE_ACK) ||
-       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = NRT_MIDDLE;
+       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = getMyNRT_MIDDLE();
   if ( (mt == RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) || (mt == RDCP_MSGTYPE_CITIZEN_REPORT) ||
-       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = NRT_HIGH;
+       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = getMyNRT_HIGH();
 
   uint32_t timeslot_duration = (nrt+1) * airtime_with_buffer;
 
@@ -869,11 +869,11 @@ void rdcp_mg_fill_outgoing_header(struct rdcp_message *rm)
   rm->header.sender = me;
 
   uint8_t mt = rm->header.message_type;
-  rm->header.counter = NRT_LOW;
+  rm->header.counter = getMyNRT_LOW();
   if ( (mt == RDCP_MSGTYPE_INFRASTRUCTURE_RESET) || (mt == RDCP_MSGTYPE_ACK) ||
-       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) rm->header.counter = NRT_MIDDLE;
+       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) rm->header.counter = getMyNRT_MIDDLE();
   if ( (mt == RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) || (mt == RDCP_MSGTYPE_CITIZEN_REPORT) ||
-       (mt == RDCP_MSGTYPE_SIGNATURE) ) rm->header.counter = NRT_HIGH;
+       (mt == RDCP_MSGTYPE_SIGNATURE) ) rm->header.counter = getMyNRT_HIGH();
 
   rm->header.sequence_number = get_next_rdcp_sequence_number(me);
 
@@ -1210,12 +1210,12 @@ int64_t rdcp_get_timeslot_duration(uint8_t *data)
   uint16_t airtime = airtime_in_ms_mgchannel(RDCP_HEADER_SIZE + h.rdcp_payload_length);
   uint16_t airtime_with_buffer = airtime + 1000;
 
-  uint8_t nrt = NRT_LOW;
+  uint8_t nrt = getMyNRT_LOW();
   uint8_t mt = h.message_type;
   if ( (mt == RDCP_MSGTYPE_INFRASTRUCTURE_RESET) || (mt == RDCP_MSGTYPE_ACK) ||
-       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = NRT_MIDDLE;
+       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = getMyNRT_MIDDLE();
   if ( (mt == RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) || (mt == RDCP_MSGTYPE_CITIZEN_REPORT) ||
-       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = NRT_HIGH;
+       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = getMyNRT_HIGH();
 
   duration = (nrt+1) * airtime_with_buffer;
 
@@ -1712,11 +1712,11 @@ void rdcp_update_cfest_out(uint8_t len, uint8_t rcnt, uint8_t mt)
 
   uint32_t remaining_current_sender_time = airtime_with_buffer * rcnt;
 
-  uint8_t nrt = NRT_LOW;
+  uint8_t nrt = getMyNRT_LOW();
   if ( (mt == RDCP_MSGTYPE_INFRASTRUCTURE_RESET) || (mt == RDCP_MSGTYPE_ACK) ||
-       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = NRT_MIDDLE;
+       (mt == RDCP_MSGTYPE_RESET_ALL_ANNOUNCEMENTS) ) nrt = getMyNRT_MIDDLE();
   if ( (mt == RDCP_MSGTYPE_OFFICIAL_ANNOUNCEMENT) || (mt == RDCP_MSGTYPE_CITIZEN_REPORT) ||
-       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = NRT_HIGH;
+       (mt == RDCP_MSGTYPE_SIGNATURE) ) nrt = getMyNRT_HIGH();
 
   uint32_t timeslot_duration = (nrt+1) * airtime_with_buffer;
   uint8_t future_timeslots = 0;
@@ -1815,7 +1815,10 @@ void rdcp_callback_txfin(void)
     rm.header.checksum = actual_crc;
     memcpy(txq.entries[tx_ongoing].payload, &rm.header, RDCP_HEADER_SIZE); // no need to overwrite RDCP payload
 
-    delay(PAUSE_BETWEEN_RETRANSMISSIONS_ON_THIS_DEVICE);
+    int delay_duration = getMyIPG() - PROCESSING_TIME_BETWEEN_RETRANSMISSIONS;
+    if (delay_duration < 0) delay_duration = 1;
+    delay(delay_duration);
+
     retransmission_count++;
     rdcp_send_message_force();
   }
@@ -2340,7 +2343,7 @@ void rdcp_send_cire(uint8_t subtype, uint16_t refnr, char *text)
   rm.header.sender = me;
   rm.header.destination  = RDCP_HQ_MULTICAST_ADDRESS;
   rm.header.message_type = RDCP_MSGTYPE_CITIZEN_REPORT;
-  rm.header.counter = NRT_HIGH;
+  rm.header.counter = getMyNRT_HIGH();
   rm.header.sequence_number = get_next_rdcp_sequence_number(me);
   cire_current_seqnr = rm.header.sequence_number;
 
